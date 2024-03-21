@@ -15,13 +15,13 @@ impl<V: Clone> Iterator for NodeIterator<V> {
         let Some(next) = &self.next else {
             return None;
         };
-        let value = with_value(&next.value, |value| value.clone());
-
         let end = self
             .stop
             .as_ref()
             .map(|stop| Rc::ptr_eq(next, stop))
             .unwrap_or(true);
+
+        let result = Some(next.value.clone());
 
         if end {
             self.next = None;
@@ -29,6 +29,7 @@ impl<V: Clone> Iterator for NodeIterator<V> {
             let next = with_value(&next.next, |next| next.upgrade());
             self.next = next;
         }
-        value
+
+        return result;
     }
 }

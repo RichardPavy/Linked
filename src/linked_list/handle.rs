@@ -10,13 +10,9 @@ pub struct Handle<V> {
     pub(super) node: Rc<Node<V>>,
 }
 
-impl<V: Clone> Handle<V> {
-    pub fn value(&self) -> V {
-        with_value(&self.node.value, |value| {
-            const NOT_EMTPY: &'static str =
-                "Handles can never have an empty value. Using Option<V> so they are Default";
-            value.as_ref().expect(NOT_EMTPY).clone()
-        })
+impl<V> Handle<V> {
+    pub fn value(&self) -> &V {
+        &self.node.value
     }
 }
 
@@ -36,7 +32,6 @@ impl<V> Drop for Handle<V> {
                 }
                 prev.next.set(Rc::downgrade(&next));
                 next.prev.set(Rc::downgrade(&prev));
-                self.node.value.set(None);
             }
             (None, None) => {}
             _ => unreachable!(),

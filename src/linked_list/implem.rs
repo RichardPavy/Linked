@@ -13,8 +13,7 @@ pub(super) struct LinkedListImpl<V> {
 
 impl<V> LinkedListImpl<V> {
     pub fn push_back(self: &Rc<Self>, value: V) -> Handle<V> {
-        let new: Rc<Node<V>> = Default::default();
-        new.value.set(Some(value));
+        let new = Rc::new(Node::from(value));
         let node = with_value(&self.node, |node| node.clone());
         if let Some(node) = node.upgrade() {
             // prev     <->     self <-> next <-> prev

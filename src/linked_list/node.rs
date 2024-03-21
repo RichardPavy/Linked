@@ -5,15 +5,15 @@ use super::with_value;
 
 pub(super) struct Node<V> {
     pub prev: Cell<Weak<Node<V>>>,
-    pub value: Cell<Option<V>>,
+    pub value: V,
     pub next: Cell<Weak<Node<V>>>,
 }
 
-impl<V> Default for Node<V> {
-    fn default() -> Self {
+impl<V> From<V> for Node<V> {
+    fn from(value: V) -> Self {
         Self {
             prev: Default::default(),
-            value: Default::default(),
+            value: value,
             next: Default::default(),
         }
     }
@@ -24,23 +24,12 @@ impl<V: Clone + std::fmt::Debug> std::fmt::Debug for Node<V> {
         f.debug_struct("Node")
             .field(
                 "prev",
-                &with_value(&self.prev, |prev| {
-                    with_value(&prev.upgrade().unwrap().value, |value| {
-                        value.clone().unwrap()
-                    })
-                }),
+                &with_value(&self.prev, |prev| prev.upgrade().unwrap().value.clone()),
             )
-            .field(
-                "value",
-                &with_value(&self.value, |value| value.clone().unwrap()),
-            )
+            .field("value", &self.value)
             .field(
                 "next",
-                &with_value(&self.next, |next| {
-                    with_value(&next.upgrade().unwrap().value, |value| {
-                        value.clone().unwrap()
-                    })
-                }),
+                &with_value(&self.next, |next| next.upgrade().unwrap().value.clone()),
             )
             .finish()
     }
