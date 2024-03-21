@@ -259,4 +259,30 @@ mod tests {
         assert_eq!(0, COUNT.load(SeqCst));
         assert_eq!(Vec::<String>::default(), to_vec());
     }
+
+    #[test]
+    fn debug() {
+        let list = LinkedList::<String>::new();
+
+        let a = list.push_back("a".into());
+        assert_eq!(
+            r#"Handle(Node { prev: "a", value: "a", next: "a" })"#,
+            format!("{a:?}")
+        );
+
+        let b = list.push_back("b".into());
+        assert_eq!(
+            r#"Handle(Node { prev: "a", value: "b", next: "a" })"#,
+            format!("{b:?}")
+        );
+
+        let c = list.push_back("c".into());
+        let _d = list.push_back("d".into());
+        assert_eq!(
+            r#"Handle(Node { prev: "b", value: "c", next: "d" })"#,
+            format!("{c:?}")
+        );
+
+        assert_eq!(r#"["a", "b", "c", "d"]"#, format!("{list:?}"));
+    }
 }
