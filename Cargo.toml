@@ -1,0 +1,26 @@
+[package]
+name = "linked"
+version = "0.1.0"
+edition = "2021"
+resolver = "2"
+
+[dependencies]
+scopeguard = { version = "1.2.0" }
+serde = { version = "1.0", features = ["rc"] }
+
+[dev-dependencies]
+serde_json = { version = "1.0" }
+
+[profile.dev.package."*"]
+# Set the default for dependencies in Development mode.
+opt-level = 3
+
+[profile.release]
+codegen-units = 1
+opt-level = 3            # Optimization level.
+debug = false            # Include debug info.
+debug-assertions = false # Enables debug assertions.
+overflow-checks = false  # Enables runtime integer overflow checks.
+lto = "fat"              # Sets link-time optimization.
+panic = "abort"          # The panic strategy.
+incremental = true       # Incremental compilation.
