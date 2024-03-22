@@ -33,6 +33,30 @@ impl<V> LinkedListImpl<V> {
             node: new,
         }
     }
+
+    pub fn prev(self: &Rc<Self>) -> Rc<Self> {
+        let node = with_value(&self.node, |node| node.clone());
+        if let Some(node) = node.upgrade() {
+            let prev = with_value(&node.prev, |prev| prev.clone());
+            Rc::new(LinkedListImpl {
+                node: Cell::new(prev),
+            })
+        } else {
+            self.clone()
+        }
+    }
+
+    pub fn next(self: &Rc<Self>) -> Rc<Self> {
+        let node = with_value(&self.node, |node| node.clone());
+        if let Some(node) = node.upgrade() {
+            let next = with_value(&node.next, |next| next.clone());
+            Rc::new(LinkedListImpl {
+                node: Cell::new(next),
+            })
+        } else {
+            self.clone()
+        }
+    }
 }
 
 impl<V: Clone> LinkedListImpl<V> {
@@ -42,6 +66,11 @@ impl<V: Clone> LinkedListImpl<V> {
             .as_ref()
             .and_then(|next| with_value(&next.prev, |prev| prev.upgrade()));
         NodeIterator { next, stop }
+    }
+
+    pub fn current(&self) -> Option<V> {
+        let current = with_value(&self.node, |node| node.upgrade());
+        current.map(|node| node.value.clone())
     }
 }
 

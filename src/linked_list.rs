@@ -27,11 +27,27 @@ impl<V> LinkedList<V> {
     pub fn push_back(&self, value: V) -> Handle<V> {
         self.list.push_back(value)
     }
+
+    pub fn prev(&self) -> Self {
+        LinkedList {
+            list: self.list.prev(),
+        }
+    }
+
+    pub fn next(&self) -> Self {
+        LinkedList {
+            list: self.list.next(),
+        }
+    }
 }
 
 impl<V: Clone> LinkedList<V> {
     pub fn iter(&self) -> impl Iterator<Item = V> {
         self.list.iter()
+    }
+
+    pub fn current(&self) -> Option<V> {
+        self.list.current()
     }
 }
 
@@ -284,5 +300,40 @@ mod tests {
         );
 
         assert_eq!(r#"["a", "b", "c", "d"]"#, format!("{list:?}"));
+    }
+
+    #[test]
+    fn prev() {
+        let list = LinkedList::<String>::new();
+        let _a = list.push_back("a".into());
+        let _b = list.push_back("b".into());
+        let _c = list.push_back("c".into());
+        let _d = list.push_back("d".into());
+
+        assert_eq!(r#"["d", "a", "b", "c"]"#, format!("{:?}", list.prev()));
+    }
+
+    #[test]
+    fn next() {
+        let list = LinkedList::<String>::new();
+        let _a = list.push_back("a".into());
+        let _b = list.push_back("b".into());
+        let _c = list.push_back("c".into());
+        let _d = list.push_back("d".into());
+
+        assert_eq!(r#"["b", "c", "d", "a"]"#, format!("{:?}", list.next()));
+    }
+
+    #[test]
+    fn current() {
+        let list = LinkedList::<String>::new();
+        let _a = list.push_back("a".into());
+        let _b = list.push_back("b".into());
+        let _c = list.push_back("c".into());
+        let _d = list.push_back("d".into());
+
+        assert_eq!(Some("a".to_string()), list.current());
+        assert_eq!(Some("d".to_string()), list.prev().current());
+        assert_eq!(Some("b".to_string()), list.next().current());
     }
 }
