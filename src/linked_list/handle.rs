@@ -41,7 +41,7 @@ impl<F: NodeFactory> Drop for Handle<F> {
     }
 }
 
-impl<V: Clone + std::fmt::Debug, F: NodeFactory<Value = V>> std::fmt::Debug for Handle<F> {
+impl<V: std::fmt::Debug, F: NodeFactory<Value = V>> std::fmt::Debug for Handle<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Handle").field((&self.node).deref()).finish()
     }

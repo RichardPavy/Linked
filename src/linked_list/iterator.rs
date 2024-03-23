@@ -1,4 +1,5 @@
 use super::node::NodeFactory;
+use super::node::NodeValueRef;
 use super::with_value;
 
 pub(super) struct NodeIterator<F: NodeFactory> {
@@ -6,8 +7,8 @@ pub(super) struct NodeIterator<F: NodeFactory> {
     pub stop: Option<F::PointerStrong>,
 }
 
-impl<V: Clone, F: NodeFactory<Value = V>> Iterator for NodeIterator<F> {
-    type Item = V;
+impl<F: NodeFactory> Iterator for NodeIterator<F> {
+    type Item = NodeValueRef<F>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let Some(next) = &self.next else {
@@ -19,7 +20,7 @@ impl<V: Clone, F: NodeFactory<Value = V>> Iterator for NodeIterator<F> {
             .map(|stop| F::ptr_eq(&F::downgrade(&next), &F::downgrade(&stop)))
             .unwrap_or(true);
 
-        let result = Some(next.value.clone());
+        let result = Some(NodeValueRef::of(next.clone()));
 
         if end {
             self.next = None;

@@ -145,7 +145,7 @@ where
     }
 
     pub fn keys(&self) -> impl Iterator<Item = K> {
-        self.keys.iter()
+        self.keys.iter().map(|x| (*x).clone())
     }
 
     pub fn values(&self) -> impl Iterator<Item = V> + '_ {

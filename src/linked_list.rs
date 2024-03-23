@@ -5,6 +5,7 @@ use scopeguard::guard;
 
 pub use self::handle::Handle;
 use self::implem::LinkedListImpl;
+use self::node::NodeValueRef;
 pub use self::node::RcNodeFactory;
 
 mod handle;
@@ -42,17 +43,24 @@ impl<V> LinkedList<V> {
     }
 }
 
-impl<V: Clone> LinkedList<V> {
-    pub fn iter(&self) -> impl Iterator<Item = V> {
+impl<V> LinkedList<V> {
+    pub fn iter(&self) -> impl Iterator<Item = NodeValueRef<RcNodeFactory<V>>> {
         self.list.iter()
     }
 
-    pub fn current(&self) -> Option<V> {
+    pub fn values(&self) -> impl Iterator<Item = V>
+    where
+        V: Clone,
+    {
+        self.list.iter().map(|v| v.clone())
+    }
+
+    pub fn current(&self) -> Option<NodeValueRef<RcNodeFactory<V>>> {
         self.list.current()
     }
 }
 
-impl<V: Clone + std::fmt::Debug> std::fmt::Debug for LinkedList<V> {
+impl<V: std::fmt::Debug> std::fmt::Debug for LinkedList<V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_list().entries(self.iter()).finish()
     }
@@ -72,7 +80,7 @@ impl<V> Clone for LinkedList<V> {
     }
 }
 
-impl<V: Clone + PartialEq> PartialEq for LinkedList<V> {
+impl<V: PartialEq> PartialEq for LinkedList<V> {
     fn eq(&self, other: &Self) -> bool {
         let mut a = self.iter();
         let mut b = other.iter();
@@ -99,21 +107,23 @@ fn with_value<T: Default, R, F: Fn(&T) -> R>(cell: &Cell<T>, f: F) -> R {
 
 #[cfg(test)]
 mod tests {
+    use tests::node::NodeValueRefOption;
+
     use super::*;
 
     #[test]
     fn push() {
         let list = LinkedList::<String>::new();
-        assert_eq!(Vec::<String>::default(), list.iter().collect::<Vec<_>>());
+        assert_eq!(Vec::<String>::default(), list.values().collect::<Vec<_>>());
 
         let _a = list.push_back("a".into());
-        assert_eq!(vec!["a"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["a"], list.values().collect::<Vec<_>>());
 
         let _b = list.push_back("b".into());
-        assert_eq!(vec!["a", "b"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["a", "b"], list.values().collect::<Vec<_>>());
 
         let _c = list.push_back("c".into());
-        assert_eq!(vec!["a", "b", "c"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["a", "b", "c"], list.values().collect::<Vec<_>>());
     }
 
     #[test]
@@ -124,13 +134,13 @@ mod tests {
         let c = list.push_back("c".into());
 
         drop(a);
-        assert_eq!(vec!["b", "c"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["b", "c"], list.values().collect::<Vec<_>>());
 
         drop(b);
-        assert_eq!(vec!["c"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["c"], list.values().collect::<Vec<_>>());
 
         drop(c);
-        assert_eq!(Vec::<String>::new(), list.iter().collect::<Vec<_>>());
+        assert_eq!(Vec::<String>::new(), list.values().collect::<Vec<_>>());
     }
 
     #[test]
@@ -141,13 +151,13 @@ mod tests {
         let c = list.push_back("c".into());
 
         drop(c);
-        assert_eq!(vec!["a", "b"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["a", "b"], list.values().collect::<Vec<_>>());
 
         drop(b);
-        assert_eq!(vec!["a"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["a"], list.values().collect::<Vec<_>>());
 
         drop(a);
-        assert_eq!(Vec::<String>::default(), list.iter().collect::<Vec<_>>());
+        assert_eq!(Vec::<String>::default(), list.values().collect::<Vec<_>>());
     }
 
     #[test]
@@ -158,13 +168,13 @@ mod tests {
         let c = list.push_back("c".into());
 
         drop(b);
-        assert_eq!(vec!["a", "c"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["a", "c"], list.values().collect::<Vec<_>>());
 
         drop(c);
-        assert_eq!(vec!["a"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["a"], list.values().collect::<Vec<_>>());
 
         drop(a);
-        assert_eq!(Vec::<String>::default(), list.iter().collect::<Vec<_>>());
+        assert_eq!(Vec::<String>::default(), list.values().collect::<Vec<_>>());
     }
 
     #[test]
@@ -175,13 +185,13 @@ mod tests {
         let c = list.push_back("c".into());
 
         drop(b);
-        assert_eq!(vec!["a", "c"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["a", "c"], list.values().collect::<Vec<_>>());
 
         drop(a);
-        assert_eq!(vec!["c"], list.iter().collect::<Vec<_>>());
+        assert_eq!(vec!["c"], list.values().collect::<Vec<_>>());
 
         drop(c);
-        assert_eq!(Vec::<String>::default(), list.iter().collect::<Vec<_>>());
+        assert_eq!(Vec::<String>::default(), list.values().collect::<Vec<_>>());
     }
 
     #[test]
@@ -333,8 +343,14 @@ mod tests {
         let _c = list.push_back("c".into());
         let _d = list.push_back("d".into());
 
-        assert_eq!(Some("a".to_string()), list.current());
-        assert_eq!(Some("d".to_string()), list.prev().current());
-        assert_eq!(Some("b".to_string()), list.next().current());
+        assert_eq!(Some(&"a".to_string()), list.current().as_ref().map_ref());
+        assert_eq!(
+            Some(&"d".to_string()),
+            list.prev().current().as_ref().map_ref()
+        );
+        assert_eq!(
+            Some(&"b".to_string()),
+            list.next().current().as_ref().map_ref()
+        );
     }
 }

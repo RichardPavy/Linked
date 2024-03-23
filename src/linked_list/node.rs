@@ -50,9 +50,9 @@ impl<V> NodeFactory for RcNodeFactory<V> {
 }
 
 pub struct Node<F: NodeFactory> {
-    pub prev: Cell<F::PointerWeak>,
-    pub value: F::Value,
-    pub next: Cell<F::PointerWeak>,
+    pub(super) prev: Cell<F::PointerWeak>,
+    pub(super) value: F::Value,
+    pub(super) next: Cell<F::PointerWeak>,
 }
 
 impl<V: std::fmt::Debug, F: NodeFactory<Value = V>> std::fmt::Debug for Node<F> {
@@ -72,5 +72,43 @@ impl<V: std::fmt::Debug, F: NodeFactory<Value = V>> std::fmt::Debug for Node<F> 
                     .value,
             )
             .finish()
+    }
+}
+
+pub struct NodeValueRef<F: NodeFactory>(F::PointerStrong);
+
+impl<F: NodeFactory> NodeValueRef<F> {
+    pub fn of(value: F::PointerStrong) -> Self {
+        Self(value)
+    }
+}
+
+impl<F: NodeFactory> Deref for NodeValueRef<F> {
+    type Target = F::Value;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_ref()
+    }
+}
+
+impl<V: std::fmt::Debug, F: NodeFactory<Value = V>> std::fmt::Debug for NodeValueRef<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.as_ref().fmt(f)
+    }
+}
+
+impl<F: NodeFactory> AsRef<F::Value> for NodeValueRef<F> {
+    fn as_ref(&self) -> &F::Value {
+        &self.0.value
+    }
+}
+
+pub trait NodeValueRefOption<V> {
+    fn map_ref(&self) -> Option<&V>;
+}
+
+impl<F: NodeFactory> NodeValueRefOption<F::Value> for Option<&NodeValueRef<F>> {
+    fn map_ref(&self) -> Option<&F::Value> {
+        self.map(|n| n.as_ref())
     }
 }
