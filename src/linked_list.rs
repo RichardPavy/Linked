@@ -5,13 +5,15 @@ use scopeguard::guard;
 
 pub use self::handle::Handle;
 use self::implem::LinkedListImpl;
-use self::node::NodeValueRef;
-pub use self::node::RcNodeFactory;
+pub use self::node_factory::RcNodeFactory;
+use self::node_ref::NodeRef;
 
 mod handle;
 mod implem;
 mod iterator;
 mod node;
+mod node_factory;
+mod node_ref;
 
 pub struct LinkedList<V> {
     list: Rc<LinkedListImpl<RcNodeFactory<V>>>,
@@ -44,7 +46,7 @@ impl<V> LinkedList<V> {
 }
 
 impl<V> LinkedList<V> {
-    pub fn iter(&self) -> impl Iterator<Item = NodeValueRef<RcNodeFactory<V>>> {
+    pub fn iter(&self) -> impl Iterator<Item = NodeRef<RcNodeFactory<V>>> {
         self.list.iter()
     }
 
@@ -55,7 +57,7 @@ impl<V> LinkedList<V> {
         self.list.iter().map(|v| v.clone())
     }
 
-    pub fn current(&self) -> Option<NodeValueRef<RcNodeFactory<V>>> {
+    pub fn current(&self) -> Option<NodeRef<RcNodeFactory<V>>> {
         self.list.current()
     }
 }
@@ -107,7 +109,7 @@ fn with_value<T: Default, R, F: Fn(&T) -> R>(cell: &Cell<T>, f: F) -> R {
 
 #[cfg(test)]
 mod tests {
-    use tests::node::NodeValueRefOption;
+    use tests::node_ref::NodeValueRefOption;
 
     use super::*;
 

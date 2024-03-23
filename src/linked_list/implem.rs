@@ -4,8 +4,8 @@ use std::rc::Rc;
 
 use super::handle::Handle;
 use super::iterator::NodeIterator;
-use super::node::NodeFactory;
-use super::node::NodeValueRef;
+use super::node_factory::NodeFactory;
+use super::node_ref::NodeRef;
 use super::with_value;
 
 pub(super) struct LinkedListImpl<F: NodeFactory> {
@@ -64,7 +64,7 @@ impl<F: NodeFactory> LinkedListImpl<F> {
 }
 
 impl<F: NodeFactory> LinkedListImpl<F> {
-    pub fn iter(&self) -> impl Iterator<Item = NodeValueRef<F>> {
+    pub fn iter(&self) -> impl Iterator<Item = NodeRef<F>> {
         let next = with_value(&self.node, |node| F::upgrade(node));
         let stop = next
             .as_ref()
@@ -72,8 +72,8 @@ impl<F: NodeFactory> LinkedListImpl<F> {
         NodeIterator::<F> { next, stop }
     }
 
-    pub fn current(&self) -> Option<NodeValueRef<F>> {
-        with_value(&self.node, |node| F::upgrade(node).map(NodeValueRef::of))
+    pub fn current(&self) -> Option<NodeRef<F>> {
+        with_value(&self.node, |node| F::upgrade(node).map(NodeRef::of))
     }
 }
 

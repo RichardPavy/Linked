@@ -2,7 +2,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use super::implem::LinkedListImpl;
-use super::node::NodeFactory;
+use super::node_factory::NodeFactory;
 use super::with_value;
 
 #[must_use]
