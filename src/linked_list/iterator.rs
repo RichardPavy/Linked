@@ -1,14 +1,12 @@
-use std::rc::Rc;
-
-use super::node::Node;
+use super::node::NodeFactory;
 use super::with_value;
 
-pub(super) struct NodeIterator<T> {
-    pub next: Option<Rc<Node<T>>>,
-    pub stop: Option<Rc<Node<T>>>,
+pub(super) struct NodeIterator<F: NodeFactory> {
+    pub next: Option<F::StrongPointer>,
+    pub stop: Option<F::StrongPointer>,
 }
 
-impl<V: Clone> Iterator for NodeIterator<V> {
+impl<V: Clone, F: NodeFactory<Value = V>> Iterator for NodeIterator<F> {
     type Item = V;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -18,7 +16,7 @@ impl<V: Clone> Iterator for NodeIterator<V> {
         let end = self
             .stop
             .as_ref()
-            .map(|stop| Rc::ptr_eq(next, stop))
+            .map(|stop| F::ptr_eq(&F::downgrade(&next), &F::downgrade(&stop)))
             .unwrap_or(true);
 
         let result = Some(next.value.clone());
@@ -26,7 +24,7 @@ impl<V: Clone> Iterator for NodeIterator<V> {
         if end {
             self.next = None;
         } else {
-            let next = with_value(&next.next, |next| next.upgrade());
+            let next = with_value(&next.next, |next| F::upgrade(next));
             self.next = next;
         }
 

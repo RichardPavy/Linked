@@ -5,6 +5,7 @@ use scopeguard::guard;
 
 pub use self::handle::Handle;
 use self::implem::LinkedListImpl;
+pub use self::node::RcNodeFactory;
 
 mod handle;
 mod implem;
@@ -12,7 +13,7 @@ mod iterator;
 mod node;
 
 pub struct LinkedList<V> {
-    list: Rc<LinkedListImpl<V>>,
+    list: Rc<LinkedListImpl<RcNodeFactory<V>>>,
 }
 
 impl<V> LinkedList<V> {
@@ -24,7 +25,7 @@ impl<V> LinkedList<V> {
 }
 
 impl<V> LinkedList<V> {
-    pub fn push_back(&self, value: V) -> Handle<V> {
+    pub fn push_back(&self, value: V) -> Handle<RcNodeFactory<V>> {
         self.list.push_back(value)
     }
 

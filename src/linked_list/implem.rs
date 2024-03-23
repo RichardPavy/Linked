@@ -1,32 +1,33 @@
 use std::cell::Cell;
+use std::marker::PhantomData;
 use std::rc::Rc;
-use std::rc::Weak;
 
 use super::handle::Handle;
 use super::iterator::NodeIterator;
-use super::node::Node;
+use super::node::NodeFactory;
 use super::with_value;
 
-pub(super) struct LinkedListImpl<V> {
-    pub node: Cell<Weak<Node<V>>>,
+pub(super) struct LinkedListImpl<F: NodeFactory> {
+    pub node: Cell<<F as NodeFactory>::WeakPointer>,
+    _phantom: PhantomData<F>,
 }
 
-impl<V> LinkedListImpl<V> {
-    pub fn push_back(self: &Rc<Self>, value: V) -> Handle<V> {
-        let new = Rc::new(Node::from(value));
+impl<F: NodeFactory> LinkedListImpl<F> {
+    pub fn push_back(self: &Rc<Self>, value: <F as NodeFactory>::Value) -> Handle<F> {
+        let new = F::of(value);
         let node = with_value(&self.node, |node| node.clone());
-        if let Some(node) = node.upgrade() {
+        if let Some(node) = F::upgrade(&node) {
             // prev     <->     self <-> next <-> prev
             // prev <-> new <-> self <-> next <-> prev
-            let prev = with_value(&node.prev, |prev| prev.upgrade()).unwrap();
-            new.prev.set(Rc::downgrade(&prev));
-            prev.next.set(Rc::downgrade(&new));
-            new.next.set(Rc::downgrade(&node));
-            node.prev.set(Rc::downgrade(&new));
+            let prev = with_value(&node.prev, |prev| F::upgrade(prev)).unwrap();
+            new.prev.set(F::downgrade(&prev));
+            prev.next.set(F::downgrade(&new));
+            new.next.set(F::downgrade(&node));
+            node.prev.set(F::downgrade(&new));
         } else {
-            self.node.set(Rc::downgrade(&new));
-            new.prev.set(Rc::downgrade(&new));
-            new.next.set(Rc::downgrade(&new));
+            self.node.set(F::downgrade(&new));
+            new.prev.set(F::downgrade(&new));
+            new.next.set(F::downgrade(&new));
         }
         Handle {
             list: self.clone(),
@@ -36,10 +37,11 @@ impl<V> LinkedListImpl<V> {
 
     pub fn prev(self: &Rc<Self>) -> Rc<Self> {
         let node = with_value(&self.node, |node| node.clone());
-        if let Some(node) = node.upgrade() {
+        if let Some(node) = F::upgrade(&node) {
             let prev = with_value(&node.prev, |prev| prev.clone());
             Rc::new(LinkedListImpl {
                 node: Cell::new(prev),
+                _phantom: PhantomData,
             })
         } else {
             self.clone()
@@ -48,10 +50,11 @@ impl<V> LinkedListImpl<V> {
 
     pub fn next(self: &Rc<Self>) -> Rc<Self> {
         let node = with_value(&self.node, |node| node.clone());
-        if let Some(node) = node.upgrade() {
+        if let Some(node) = F::upgrade(&node) {
             let next = with_value(&node.next, |next| next.clone());
             Rc::new(LinkedListImpl {
                 node: Cell::new(next),
+                _phantom: PhantomData,
             })
         } else {
             self.clone()
@@ -59,25 +62,26 @@ impl<V> LinkedListImpl<V> {
     }
 }
 
-impl<V: Clone> LinkedListImpl<V> {
+impl<V: Clone, F: NodeFactory<Value = V>> LinkedListImpl<F> {
     pub fn iter(&self) -> impl Iterator<Item = V> {
-        let next = with_value(&self.node, |node| node.upgrade());
+        let next = with_value(&self.node, |node| F::upgrade(node));
         let stop = next
             .as_ref()
-            .and_then(|next| with_value(&next.prev, |prev| prev.upgrade()));
-        NodeIterator { next, stop }
+            .and_then(|next| with_value(&next.prev, |prev| F::upgrade(prev)));
+        NodeIterator::<F> { next, stop }
     }
 
     pub fn current(&self) -> Option<V> {
-        let current = with_value(&self.node, |node| node.upgrade());
+        let current = with_value(&self.node, |node| F::upgrade(node));
         current.map(|node| node.value.clone())
     }
 }
 
-impl<V> Default for LinkedListImpl<V> {
+impl<F: NodeFactory> Default for LinkedListImpl<F> {
     fn default() -> Self {
         Self {
             node: Default::default(),
+            _phantom: PhantomData,
         }
     }
 }
