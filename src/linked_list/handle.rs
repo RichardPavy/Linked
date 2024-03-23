@@ -19,21 +19,20 @@ impl<F: NodeFactory> Handle<F> {
 
 impl<F: NodeFactory> Drop for Handle<F> {
     fn drop(&mut self) {
-        match (
-            with_value(&self.node.prev, |prev| F::upgrade(prev)),
-            with_value(&self.node.next, |next| F::upgrade(next)),
-        ) {
-            (Some(ref prev), Some(ref next)) => {
+        let prev_weak = with_value(&self.node.prev, F::PointerWeak::clone);
+        let next_weak = with_value(&self.node.next, F::PointerWeak::clone);
+        match (F::upgrade(&prev_weak), F::upgrade(&next_weak)) {
+            (Some(prev_strong), Some(next_strong)) => {
                 // prev <-> self <-> next <-> prev
                 // prev          <-> next <-> prev
-                if F::ptr_eq(
-                    &with_value(&self.list.node, |node| node.clone()),
+                if F::ptr_eq_weak(
+                    &with_value(&self.list.node, F::PointerWeak::clone),
                     &F::downgrade(&self.node),
                 ) {
-                    self.list.node.set(F::downgrade(next));
+                    self.list.node.set(next_weak.clone());
                 }
-                prev.next.set(F::downgrade(&next));
-                next.prev.set(F::downgrade(&prev));
+                prev_strong.next.set(next_weak);
+                next_strong.prev.set(prev_weak);
             }
             (None, None) => {}
             _ => unreachable!(),

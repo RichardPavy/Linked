@@ -15,7 +15,8 @@ pub trait NodeFactory: Sized {
     fn of(value: Self::Value) -> Self::PointerStrong;
     fn upgrade(pointer: &Self::PointerWeak) -> Option<Self::PointerStrong>;
     fn downgrade(pointer: &Self::PointerStrong) -> Self::PointerWeak;
-    fn ptr_eq(a: &Self::PointerWeak, b: &Self::PointerWeak) -> bool;
+    fn ptr_eq_strong(a: &Self::PointerStrong, b: &Self::PointerStrong) -> bool;
+    fn ptr_eq_weak(a: &Self::PointerWeak, b: &Self::PointerWeak) -> bool;
 }
 
 pub struct RcNodeFactory<V>(PhantomData<V>);
@@ -43,7 +44,11 @@ impl<V> NodeFactory for RcNodeFactory<V> {
         Rc::downgrade(&pointer)
     }
 
-    fn ptr_eq(a: &Self::PointerWeak, b: &Self::PointerWeak) -> bool {
+    fn ptr_eq_strong(a: &Self::PointerStrong, b: &Self::PointerStrong) -> bool {
+        Rc::ptr_eq(a, b)
+    }
+
+    fn ptr_eq_weak(a: &Self::PointerWeak, b: &Self::PointerWeak) -> bool {
         Weak::ptr_eq(a, b)
     }
 }

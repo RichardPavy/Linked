@@ -12,19 +12,9 @@ pub struct Node<F: NodeFactory> {
 impl<V: std::fmt::Debug, F: NodeFactory<Value = V>> std::fmt::Debug for Node<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Node")
-            .field(
-                "prev",
-                &with_value(&self.prev, |prev| F::upgrade(&prev).clone())
-                    .unwrap()
-                    .value,
-            )
+            .field("prev", &with_value(&self.prev, F::upgrade).unwrap().value)
             .field("value", &self.value)
-            .field(
-                "next",
-                &with_value(&self.next, |next| F::upgrade(&next).clone())
-                    .unwrap()
-                    .value,
-            )
+            .field("next", &with_value(&self.next, F::upgrade).unwrap().value)
             .finish()
     }
 }

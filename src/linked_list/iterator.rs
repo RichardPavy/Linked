@@ -17,7 +17,7 @@ impl<F: NodeFactory> Iterator for NodeIterator<F> {
         let end = self
             .stop
             .as_ref()
-            .map(|stop| F::ptr_eq(&F::downgrade(&next), &F::downgrade(&stop)))
+            .map(|stop| F::ptr_eq_strong(&next, &stop))
             .unwrap_or(true);
 
         let result = Some(NodeRef::of(next.clone()));
@@ -25,7 +25,7 @@ impl<F: NodeFactory> Iterator for NodeIterator<F> {
         if end {
             self.next = None;
         } else {
-            let next = with_value(&next.next, |next| F::upgrade(next));
+            let next = with_value(&next.next, F::upgrade);
             self.next = next;
         }
 
