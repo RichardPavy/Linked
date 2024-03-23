@@ -2,8 +2,8 @@ use super::node::NodeFactory;
 use super::with_value;
 
 pub(super) struct NodeIterator<F: NodeFactory> {
-    pub next: Option<F::StrongPointer>,
-    pub stop: Option<F::StrongPointer>,
+    pub next: Option<F::PointerStrong>,
+    pub stop: Option<F::PointerStrong>,
 }
 
 impl<V: Clone, F: NodeFactory<Value = V>> Iterator for NodeIterator<F> {

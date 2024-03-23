@@ -8,23 +8,27 @@ use super::with_value;
 
 pub trait NodeFactory: Sized {
     type Value;
-    type StrongPointer: Deref<Target = Node<Self>>; // Rc<Node<V>>
-    type WeakPointer: Clone + Default; // Weak<Node<V>>
+    type PointerStrong: Clone + Deref<Target = Node<Self>>; // Rc<Node<V>>
+    type PointerWeak: Clone + Default; // Weak<Node<V>>
+    type ReferenceRaw;
+    type Reference: Deref<Target = Node<Self>>;
 
-    fn of(value: Self::Value) -> Self::StrongPointer;
-    fn upgrade(pointer: &Self::WeakPointer) -> Option<Self::StrongPointer>;
-    fn downgrade(pointer: &Self::StrongPointer) -> Self::WeakPointer;
-    fn ptr_eq(a: &Self::WeakPointer, b: &Self::WeakPointer) -> bool;
+    fn of(value: Self::Value) -> Self::PointerStrong;
+    fn upgrade(pointer: &Self::PointerWeak) -> Option<Self::PointerStrong>;
+    fn downgrade(pointer: &Self::PointerStrong) -> Self::PointerWeak;
+    fn ptr_eq(a: &Self::PointerWeak, b: &Self::PointerWeak) -> bool;
 }
 
 pub struct RcNodeFactory<V>(PhantomData<V>);
 
 impl<V> NodeFactory for RcNodeFactory<V> {
     type Value = V;
-    type StrongPointer = Rc<Node<Self>>;
-    type WeakPointer = Weak<Node<Self>>;
+    type PointerStrong = Rc<Node<Self>>;
+    type PointerWeak = Weak<Node<Self>>;
+    type ReferenceRaw = Self::PointerStrong;
+    type Reference = Self::PointerStrong;
 
-    fn of(value: Self::Value) -> Self::StrongPointer {
+    fn of(value: Self::Value) -> Self::PointerStrong {
         Rc::new(Node {
             prev: Default::default(),
             value: value,
@@ -32,36 +36,40 @@ impl<V> NodeFactory for RcNodeFactory<V> {
         })
     }
 
-    fn upgrade(pointer: &Self::WeakPointer) -> Option<Self::StrongPointer> {
+    fn upgrade(pointer: &Self::PointerWeak) -> Option<Self::PointerStrong> {
         pointer.upgrade()
     }
 
-    fn downgrade(pointer: &Self::StrongPointer) -> Self::WeakPointer {
+    fn downgrade(pointer: &Self::PointerStrong) -> Self::PointerWeak {
         Rc::downgrade(&pointer)
     }
 
-    fn ptr_eq(a: &Self::WeakPointer, b: &Self::WeakPointer) -> bool {
+    fn ptr_eq(a: &Self::PointerWeak, b: &Self::PointerWeak) -> bool {
         Weak::ptr_eq(a, b)
     }
 }
 
 pub struct Node<F: NodeFactory> {
-    pub prev: Cell<F::WeakPointer>,
+    pub prev: Cell<F::PointerWeak>,
     pub value: F::Value,
-    pub next: Cell<F::WeakPointer>,
+    pub next: Cell<F::PointerWeak>,
 }
 
-impl<V: Clone + std::fmt::Debug, F: NodeFactory<Value = V>> std::fmt::Debug for Node<F> {
+impl<V: std::fmt::Debug, F: NodeFactory<Value = V>> std::fmt::Debug for Node<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Node")
             .field(
                 "prev",
-                &with_value(&self.prev, |prev| F::upgrade(&prev).unwrap().value.clone()),
+                &with_value(&self.prev, |prev| F::upgrade(&prev).clone())
+                    .unwrap()
+                    .value,
             )
             .field("value", &self.value)
             .field(
                 "next",
-                &with_value(&self.next, |next| F::upgrade(&next).unwrap().value.clone()),
+                &with_value(&self.next, |next| F::upgrade(&next).clone())
+                    .unwrap()
+                    .value,
             )
             .finish()
     }

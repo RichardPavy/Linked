@@ -8,7 +8,7 @@ use super::node::NodeFactory;
 use super::with_value;
 
 pub(super) struct LinkedListImpl<F: NodeFactory> {
-    pub node: Cell<<F as NodeFactory>::WeakPointer>,
+    pub node: Cell<<F as NodeFactory>::PointerWeak>,
     _phantom: PhantomData<F>,
 }
 

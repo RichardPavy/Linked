@@ -8,7 +8,7 @@ use super::with_value;
 #[must_use]
 pub struct Handle<F: NodeFactory> {
     pub(super) list: Rc<LinkedListImpl<F>>,
-    pub(super) node: F::StrongPointer,
+    pub(super) node: F::PointerStrong,
 }
 
 impl<F: NodeFactory> Handle<F> {
