@@ -29,13 +29,3 @@ impl<F: NodeFactory> AsRef<F::Value> for NodeRef<F> {
         &self.0.value
     }
 }
-
-pub trait NodeValueRefOption<V> {
-    fn map_ref(&self) -> Option<&V>;
-}
-
-impl<F: NodeFactory> NodeValueRefOption<F::Value> for Option<&NodeRef<F>> {
-    fn map_ref(&self) -> Option<&F::Value> {
-        self.map(|n| n.as_ref())
-    }
-}

@@ -109,8 +109,6 @@ fn with_value<T: Default, R, F: Fn(&T) -> R>(cell: &Cell<T>, f: F) -> R {
 
 #[cfg(test)]
 mod tests {
-    use tests::node_ref::NodeValueRefOption;
-
     use super::*;
 
     #[test]
@@ -345,14 +343,8 @@ mod tests {
         let _c = list.push_back("c".into());
         let _d = list.push_back("d".into());
 
-        assert_eq!(Some(&"a".to_string()), list.current().as_ref().map_ref());
-        assert_eq!(
-            Some(&"d".to_string()),
-            list.prev().current().as_ref().map_ref()
-        );
-        assert_eq!(
-            Some(&"b".to_string()),
-            list.next().current().as_ref().map_ref()
-        );
+        assert_eq!(Some(&"a".to_string()), list.current().as_deref());
+        assert_eq!(Some(&"d".to_string()), list.prev().current().as_deref());
+        assert_eq!(Some(&"b".to_string()), list.next().current().as_deref());
     }
 }
