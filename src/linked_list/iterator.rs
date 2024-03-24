@@ -3,8 +3,8 @@ use super::node_ref::NodeRef;
 use super::with_value;
 
 pub(super) struct NodeIterator<F: NodeFactory> {
-    pub next: Option<F::PointerStrong>,
-    pub stop: Option<F::PointerStrong>,
+    pub next: Option<F::Reference>,
+    pub stop: Option<F::Reference>,
 }
 
 impl<F: NodeFactory> Iterator for NodeIterator<F> {
@@ -17,7 +17,7 @@ impl<F: NodeFactory> Iterator for NodeIterator<F> {
         let end = self
             .stop
             .as_ref()
-            .map(|stop| F::ptr_eq_strong(&next, &stop))
+            .map(|stop| F::ptr_eq_ref(&next, &stop))
             .unwrap_or(true);
 
         let result = Some(NodeRef::of(next.clone()));
@@ -25,7 +25,7 @@ impl<F: NodeFactory> Iterator for NodeIterator<F> {
         if end {
             self.next = None;
         } else {
-            let next = with_value(&next.next, F::upgrade);
+            let next = with_value(&next.next, F::to_ref);
             self.next = next;
         }
 

@@ -2,10 +2,10 @@ use std::ops::Deref;
 
 use super::node_factory::NodeFactory;
 
-pub struct NodeRef<F: NodeFactory>(F::PointerStrong);
+pub struct NodeRef<F: NodeFactory>(F::Reference);
 
 impl<F: NodeFactory> NodeRef<F> {
-    pub fn of(value: F::PointerStrong) -> Self {
+    pub fn of(value: F::Reference) -> Self {
         Self(value)
     }
 }
