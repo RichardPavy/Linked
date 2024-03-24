@@ -8,15 +8,15 @@ use super::node::Node;
 pub trait NodeFactory: Sized {
     type Value;
     type Reference: Clone + Deref<Target = Node<Self>>; // Rc<Node<V>>
-    type ReferenceRaw: Clone + Default; // Weak<Node<V>>
-    type ReferenceRaw2;
-    type Reference2: Deref<Target = Node<Self>>;
+    type Pointer: Clone + Default; // Weak<Node<V>>
+    type Handle: Deref<Target = Node<Self>>;
 
-    fn of(value: Self::Value) -> Self::Reference;
-    fn to_ref(pointer: &Self::ReferenceRaw) -> Option<Self::Reference>;
-    fn to_raw(pointer: &Self::Reference) -> Self::ReferenceRaw;
+    fn of(value: Self::Value) -> Self::Handle;
+    fn to_ref(pointer: &Self::Pointer) -> Option<Self::Reference>;
+    fn to_ptr(pointer: &Self::Reference) -> Self::Pointer;
+    fn downgrade(pointer: &Self::Handle) -> Self::Pointer;
     fn ptr_eq_ref(a: &Self::Reference, b: &Self::Reference) -> bool;
-    fn ptr_eq_raw(a: &Self::ReferenceRaw, b: &Self::ReferenceRaw) -> bool;
+    fn ptr_eq_ptr(a: &Self::Pointer, b: &Self::Pointer) -> bool;
 }
 
 pub struct RcNodeFactory<V>(PhantomData<V>);
@@ -24,9 +24,8 @@ pub struct RcNodeFactory<V>(PhantomData<V>);
 impl<V> NodeFactory for RcNodeFactory<V> {
     type Value = V;
     type Reference = Rc<Node<Self>>;
-    type ReferenceRaw = Weak<Node<Self>>;
-    type ReferenceRaw2 = Self::Reference;
-    type Reference2 = Self::Reference;
+    type Pointer = Weak<Node<Self>>;
+    type Handle = Self::Reference;
 
     fn of(value: Self::Value) -> Self::Reference {
         Rc::new(Node {
@@ -36,11 +35,15 @@ impl<V> NodeFactory for RcNodeFactory<V> {
         })
     }
 
-    fn to_ref(pointer: &Self::ReferenceRaw) -> Option<Self::Reference> {
+    fn to_ref(pointer: &Self::Pointer) -> Option<Self::Reference> {
         pointer.upgrade()
     }
 
-    fn to_raw(pointer: &Self::Reference) -> Self::ReferenceRaw {
+    fn to_ptr(pointer: &Self::Reference) -> Self::Pointer {
+        Rc::downgrade(&pointer)
+    }
+
+    fn downgrade(pointer: &Self::Handle) -> Self::Pointer {
         Rc::downgrade(&pointer)
     }
 
@@ -48,7 +51,7 @@ impl<V> NodeFactory for RcNodeFactory<V> {
         Rc::ptr_eq(a, b)
     }
 
-    fn ptr_eq_raw(a: &Self::ReferenceRaw, b: &Self::ReferenceRaw) -> bool {
+    fn ptr_eq_ptr(a: &Self::Pointer, b: &Self::Pointer) -> bool {
         Weak::ptr_eq(a, b)
     }
 }

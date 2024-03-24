@@ -4,9 +4,9 @@ use super::node_factory::NodeFactory;
 use super::with_value;
 
 pub struct Node<F: NodeFactory> {
-    pub(super) prev: Cell<F::ReferenceRaw>,
+    pub(super) prev: Cell<F::Pointer>,
     pub(super) value: F::Value,
-    pub(super) next: Cell<F::ReferenceRaw>,
+    pub(super) next: Cell<F::Pointer>,
 }
 
 impl<V: std::fmt::Debug, F: NodeFactory<Value = V>> std::fmt::Debug for Node<F> {

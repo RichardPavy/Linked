@@ -9,28 +9,28 @@ use super::node_ref::NodeRef;
 use super::with_value;
 
 pub(super) struct LinkedListImpl<F: NodeFactory> {
-    pub node: Cell<F::ReferenceRaw>,
+    pub node: Cell<F::Pointer>,
     _phantom: PhantomData<F>,
 }
 
 impl<F: NodeFactory> LinkedListImpl<F> {
     pub fn push_back(self: &Rc<Self>, value: F::Value) -> Handle<F> {
         let new_ref = F::of(value);
-        let new_raw = F::to_raw(&new_ref);
-        let node_raw = with_value(&self.node, F::ReferenceRaw::clone);
-        if let Some(node_ref) = F::to_ref(&node_raw) {
+        let new_ptr = F::downgrade(&new_ref);
+        let node_ptr = with_value(&self.node, F::Pointer::clone);
+        if let Some(node_ref) = F::to_ref(&node_ptr) {
             // prev     <->     self <-> next <-> prev
             // prev <-> new <-> self <-> next <-> prev
-            let prev_raw = with_value(&node_ref.prev, F::ReferenceRaw::clone);
-            let prev_ref = F::to_ref(&prev_raw).unwrap();
-            new_ref.prev.set(prev_raw);
-            prev_ref.next.set(new_raw.clone());
-            new_ref.next.set(node_raw);
-            node_ref.prev.set(new_raw);
+            let prev_ptr = with_value(&node_ref.prev, F::Pointer::clone);
+            let prev_ref = F::to_ref(&prev_ptr).unwrap();
+            new_ref.prev.set(prev_ptr);
+            prev_ref.next.set(new_ptr.clone());
+            new_ref.next.set(node_ptr);
+            node_ref.prev.set(new_ptr);
         } else {
-            self.node.set(new_raw.clone());
-            new_ref.prev.set(new_raw.clone());
-            new_ref.next.set(new_raw);
+            self.node.set(new_ptr.clone());
+            new_ref.prev.set(new_ptr.clone());
+            new_ref.next.set(new_ptr);
         }
         Handle {
             list: self.clone(),
@@ -39,9 +39,9 @@ impl<F: NodeFactory> LinkedListImpl<F> {
     }
 
     pub fn prev(self: &Rc<Self>) -> Rc<Self> {
-        let node = with_value(&self.node, F::ReferenceRaw::clone);
+        let node = with_value(&self.node, F::Pointer::clone);
         if let Some(node) = F::to_ref(&node) {
-            let prev = with_value(&node.prev, F::ReferenceRaw::clone);
+            let prev = with_value(&node.prev, F::Pointer::clone);
             Rc::new(LinkedListImpl {
                 node: Cell::new(prev),
                 _phantom: PhantomData,
@@ -52,9 +52,9 @@ impl<F: NodeFactory> LinkedListImpl<F> {
     }
 
     pub fn next(self: &Rc<Self>) -> Rc<Self> {
-        let node = with_value(&self.node, F::ReferenceRaw::clone);
+        let node = with_value(&self.node, F::Pointer::clone);
         if let Some(node) = F::to_ref(&node) {
-            let next = with_value(&node.next, F::ReferenceRaw::clone);
+            let next = with_value(&node.next, F::Pointer::clone);
             Rc::new(LinkedListImpl {
                 node: Cell::new(next),
                 _phantom: PhantomData,
