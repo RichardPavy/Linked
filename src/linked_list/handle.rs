@@ -20,15 +20,17 @@ impl<F: NodeFactory> Handle<F> {
 impl<F: NodeFactory> Drop for Handle<F> {
     fn drop(&mut self) {
         let prev_ptr = with_value(&self.node.prev, F::Pointer::clone);
+        let node_ptr = F::downgrade(&self.node);
+        if F::ptr_eq_ptr(&prev_ptr, &node_ptr) {
+            self.list.node.set(F::Pointer::default());
+            return;
+        }
         let next_ptr = with_value(&self.node.next, F::Pointer::clone);
         match (F::to_ref(&prev_ptr), F::to_ref(&next_ptr)) {
             (Some(prev_ref), Some(next_ref)) => {
                 // prev <-> self <-> next <-> prev
                 // prev          <-> next <-> prev
-                if F::ptr_eq_ptr(
-                    &with_value(&self.list.node, F::Pointer::clone),
-                    &F::downgrade(&self.node),
-                ) {
+                if F::ptr_eq_ptr(&with_value(&self.list.node, F::Pointer::clone), &node_ptr) {
                     self.list.node.set(next_ptr.clone());
                 }
                 prev_ref.next.set(next_ptr);
