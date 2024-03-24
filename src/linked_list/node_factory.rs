@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::rc::Rc;
-use std::rc::Weak;
 
 use super::node::Node;
 
@@ -20,14 +19,29 @@ pub trait NodeFactory: Sized {
 }
 
 pub struct RcNodeFactory<V>(PhantomData<V>);
+pub struct RawRef<V>(*const Node<RcNodeFactory<V>>);
+
+impl<V> Clone for RawRef<V> {
+    fn clone(&self) -> Self {
+        Self(self.0)
+    }
+}
+
+impl<V> Deref for RawRef<V> {
+    type Target = Node<RcNodeFactory<V>>;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.0 }
+    }
+}
 
 impl<V> NodeFactory for RcNodeFactory<V> {
     type Value = V;
-    type Reference = Rc<Node<Self>>;
-    type Pointer = Weak<Node<Self>>;
-    type Handle = Self::Reference;
+    type Reference = RawRef<V>;
+    type Pointer = Option<*const Node<Self>>;
+    type Handle = Rc<Node<Self>>;
 
-    fn of(value: Self::Value) -> Self::Reference {
+    fn of(value: Self::Value) -> Self::Handle {
         Rc::new(Node {
             prev: Default::default(),
             value: value,
@@ -36,22 +50,26 @@ impl<V> NodeFactory for RcNodeFactory<V> {
     }
 
     fn to_ref(pointer: &Self::Pointer) -> Option<Self::Reference> {
-        pointer.upgrade()
+        pointer.map(|p| RawRef(p))
     }
 
     fn to_ptr(pointer: &Self::Reference) -> Self::Pointer {
-        Rc::downgrade(&pointer)
+        if pointer.0.is_null() {
+            None
+        } else {
+            Some(pointer.0)
+        }
     }
 
     fn downgrade(pointer: &Self::Handle) -> Self::Pointer {
-        Rc::downgrade(&pointer)
+        Some(pointer.as_ref())
     }
 
     fn ptr_eq_ref(a: &Self::Reference, b: &Self::Reference) -> bool {
-        Rc::ptr_eq(a, b)
+        a.0 == b.0
     }
 
     fn ptr_eq_ptr(a: &Self::Pointer, b: &Self::Pointer) -> bool {
-        Weak::ptr_eq(a, b)
+        a == b
     }
 }
