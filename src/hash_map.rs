@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
 
-use super::linked_list;
-use super::linked_list::LinkedList;
-use crate::linked_list::RcNodeFactory;
+use super::list;
+use super::list::LinkedList;
+use crate::list::RcNodeFactory;
 
 pub mod collectible;
 pub mod serializable;
@@ -45,7 +45,7 @@ where
     K: Clone + Eq + Hash,
 {
     linked_hash_map: LinkedHashMap<K, V>,
-    key_handle: RefCell<Option<linked_list::Handle<RcNodeFactory<K>>>>,
+    key_handle: RefCell<Option<list::Handle<RcNodeFactory<K>>>>,
 }
 
 impl<K, V> Drop for HandleImpl<K, V>
