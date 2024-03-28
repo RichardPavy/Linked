@@ -36,7 +36,7 @@ where
 }
 
 #[derive(Clone)]
-pub struct Handle<K, V>(Rc<HandleImpl<K, V>>)
+pub struct Handle<K, V>(#[allow(unused)] Rc<HandleImpl<K, V>>)
 where
     K: Clone + Eq + Hash;
 
