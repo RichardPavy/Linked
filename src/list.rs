@@ -5,6 +5,7 @@ use scopeguard::guard;
 
 pub use self::handle::Handle;
 use self::implem::LinkedListImpl;
+use self::node_factory::NodeFactory;
 pub use self::node_factory::RcNodeFactory;
 use self::node_ref::NodeRef;
 
@@ -15,11 +16,20 @@ mod node;
 mod node_factory;
 mod node_ref;
 
-pub struct LinkedList<V> {
-    list: Rc<LinkedListImpl<RcNodeFactory<V>>>,
+pub mod collectible;
+pub mod serializable;
+
+pub struct LinkedList<V, F = RcNodeFactory<V>>
+where
+    F: NodeFactory<Value = V>,
+{
+    list: Rc<LinkedListImpl<F>>,
 }
 
-impl<V> LinkedList<V> {
+impl<V, F> LinkedList<V, F>
+where
+    F: NodeFactory<Value = V>,
+{
     pub fn new() -> Self {
         Self {
             list: Rc::new(LinkedListImpl::default()),
@@ -27,8 +37,11 @@ impl<V> LinkedList<V> {
     }
 }
 
-impl<V> LinkedList<V> {
-    pub fn push_back(&self, value: V) -> Handle<RcNodeFactory<V>> {
+impl<V, F> LinkedList<V, F>
+where
+    F: NodeFactory<Value = V>,
+{
+    pub fn push_back(&self, value: V) -> Handle<F> {
         self.list.push_back(value)
     }
 
@@ -43,10 +56,8 @@ impl<V> LinkedList<V> {
             list: self.list.next(),
         }
     }
-}
 
-impl<V> LinkedList<V> {
-    pub fn iter(&self) -> impl Iterator<Item = NodeRef<RcNodeFactory<V>>> {
+    pub fn iter(&self) -> impl Iterator<Item = NodeRef<F>> {
         self.list.iter()
     }
 
@@ -57,24 +68,34 @@ impl<V> LinkedList<V> {
         self.list.iter().map(|v| v.clone())
     }
 
-    pub fn current(&self) -> Option<NodeRef<RcNodeFactory<V>>> {
+    pub fn current(&self) -> Option<NodeRef<F>> {
         self.list.current()
     }
 }
 
-impl<V: std::fmt::Debug> std::fmt::Debug for LinkedList<V> {
+impl<V, F> std::fmt::Debug for LinkedList<V, F>
+where
+    V: std::fmt::Debug,
+    F: NodeFactory<Value = V>,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_list().entries(self.iter()).finish()
     }
 }
 
-impl<V> Default for LinkedList<V> {
+impl<V, F> Default for LinkedList<V, F>
+where
+    F: NodeFactory<Value = V>,
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<V> Clone for LinkedList<V> {
+impl<V, F> Clone for LinkedList<V, F>
+where
+    F: NodeFactory<Value = V>,
+{
     fn clone(&self) -> Self {
         Self {
             list: Rc::clone(&self.list),
@@ -82,7 +103,11 @@ impl<V> Clone for LinkedList<V> {
     }
 }
 
-impl<V: PartialEq> PartialEq for LinkedList<V> {
+impl<V, F> PartialEq for LinkedList<V, F>
+where
+    V: PartialEq,
+    F: NodeFactory<Value = V>,
+{
     fn eq(&self, other: &Self) -> bool {
         let mut a = self.iter();
         let mut b = other.iter();
@@ -100,7 +125,12 @@ impl<V: PartialEq> PartialEq for LinkedList<V> {
     }
 }
 
-impl<V: Clone + Eq> Eq for LinkedList<V> {}
+impl<V, F> Eq for LinkedList<V, F>
+where
+    V: Eq,
+    F: NodeFactory<Value = V>,
+{
+}
 
 fn with_value<T: Default, R, F: Fn(&T) -> R>(cell: &Cell<T>, f: F) -> R {
     let value = guard(cell.take(), move |v| cell.set(v));

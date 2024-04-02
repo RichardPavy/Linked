@@ -12,7 +12,6 @@ pub trait NodeFactory: Sized {
 
     fn of(value: Self::Value) -> Self::Handle;
     fn to_ref(pointer: &Self::Pointer) -> Option<Self::Reference>;
-    fn to_ptr(pointer: &Self::Reference) -> Self::Pointer;
     fn downgrade(pointer: &Self::Handle) -> Self::Pointer;
     fn ptr_eq_ref(a: &Self::Reference, b: &Self::Reference) -> bool;
     fn ptr_eq_ptr(a: &Self::Pointer, b: &Self::Pointer) -> bool;
@@ -39,7 +38,7 @@ impl<V> NodeFactory for RcNodeFactory<V> {
     type Value = V;
     type Reference = RawRef<V>;
     type Pointer = Option<*const Node<Self>>;
-    type Handle = Rc<Node<Self>>;
+    type Handle = Rc<Node<Self>>; // TODO: This can just be a Box<Node<Self>>
 
     fn of(value: Self::Value) -> Self::Handle {
         Rc::new(Node {
@@ -51,14 +50,6 @@ impl<V> NodeFactory for RcNodeFactory<V> {
 
     fn to_ref(pointer: &Self::Pointer) -> Option<Self::Reference> {
         pointer.map(|p| RawRef(p))
-    }
-
-    fn to_ptr(pointer: &Self::Reference) -> Self::Pointer {
-        if pointer.0.is_null() {
-            None
-        } else {
-            Some(pointer.0)
-        }
     }
 
     fn downgrade(pointer: &Self::Handle) -> Self::Pointer {
